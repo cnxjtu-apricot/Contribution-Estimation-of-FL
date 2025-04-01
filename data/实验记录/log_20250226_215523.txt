@@ -1,0 +1,68 @@
+2025-02-26 21:55:23,192 - INFO - MLP(
+  (layer_input): Linear(in_features=784, out_features=200, bias=True)
+  (relu): ReLU()
+  (dropout): Dropout(p=0.5)
+  (layer_hidden): Linear(in_features=200, out_features=10, bias=True)
+)
+2025-02-26 21:55:23,192 - INFO - use data from these clients: [2 3 7 1 9]
+2025-02-26 21:56:20,644 - INFO - Round   0, Average loss 0.3264499059688455
+2025-02-26 22:15:49,610 - INFO - Round   0, clients: [2 3 7 1 9],  Contribution [0.         0.13422681 0.20344419 0.19906786 0.         0.
+ 0.         0.20116225 0.         0.14092852]
+2025-02-26 22:15:49,612 - INFO - use data from these clients: [1 7 9 0 8]
+2025-02-26 22:16:20,973 - INFO - Round   1, Average loss 0.1692486226018363
+2025-02-26 22:30:38,144 - INFO - Round   1, clients: [1 7 9 0 8],  Contribution [-0.04172122  0.01378527  0.          0.          0.          0.
+  0.          0.06048123 -0.02498916  0.00810729]
+2025-02-26 22:30:38,146 - INFO - use data from these clients: [0 3 5 8 1]
+2025-02-26 22:31:10,213 - INFO - Round   2, Average loss 0.12303619198904878
+2025-02-26 22:45:59,088 - INFO - Round   2, clients: [0 3 5 8 1],  Contribution [-0.02927846  0.03159452  0.          0.06174515  0.         -0.04008993
+  0.          0.         -0.01491459  0.        ]
+2025-02-26 22:45:59,091 - INFO - use data from these clients: [5 4 3 0 8]
+2025-02-26 22:46:28,830 - INFO - Round   3, Average loss 0.09605040750334713
+2025-02-26 23:01:02,558 - INFO - Round   3, clients: [5 4 3 0 8],  Contribution [-0.02546467  0.          0.          0.04375916  0.03029913 -0.03785586
+  0.          0.         -0.00511649  0.        ]
+2025-02-26 23:01:02,561 - INFO - use data from these clients: [8 2 9 5 6]
+2025-02-26 23:01:31,233 - INFO - Round   4, Average loss 0.09987666904766666
+2025-02-26 23:15:21,010 - INFO - Round   4, clients: [8 2 9 5 6],  Contribution [ 0.          0.          0.03681496  0.          0.         -0.05071425
+  0.01063084  0.          0.00564058  0.00029896]
+2025-02-26 23:15:21,011 - INFO - use data from these clients: [8 2 1 7 5]
+2025-02-26 23:15:46,628 - INFO - Round   5, Average loss 0.09157055818317555
+2025-02-26 23:29:33,241 - INFO - Round   5, clients: [8 2 1 7 5],  Contribution [ 0.          0.01073506  0.01861371  0.          0.         -0.03654382
+  0.          0.01988741 -0.00357643  0.        ]
+2025-02-26 23:29:33,243 - INFO - use data from these clients: [6 9 3 4 2]
+2025-02-26 23:30:06,528 - INFO - Round   6, Average loss 0.08740338791350999
+2025-02-26 23:44:15,792 - INFO - Round   6, clients: [6 9 3 4 2],  Contribution [ 0.          0.          0.00920805  0.00961495 -0.00411451  0.
+ -0.01122504  0.          0.         -0.00380985]
+2025-02-26 23:44:15,794 - INFO - use data from these clients: [8 5 1 0 3]
+2025-02-26 23:44:48,862 - INFO - Round   7, Average loss 0.0757514441786628
+2025-02-26 23:58:42,892 - INFO - Round   7, clients: [8 5 1 0 3],  Contribution [-0.01562735  0.01869581  0.          0.02098856  0.         -0.02649037
+  0.          0.          0.00177455  0.        ]
+2025-02-26 23:58:42,894 - INFO - use data from these clients: [9 0 1 4 3]
+2025-02-26 23:59:08,762 - INFO - Round   8, Average loss 0.0733627328899404
+2025-02-27 00:14:02,375 - INFO - Round   8, clients: [9 0 1 4 3],  Contribution [-0.01817715  0.00953328  0.          0.01258592  0.00345637  0.
+  0.          0.          0.         -0.00193388]
+2025-02-27 00:14:02,378 - INFO - use data from these clients: [5 8 7 1 2]
+2025-02-27 00:14:41,195 - INFO - Round   9, Average loss 0.07269534936645469
+2025-02-27 00:28:43,688 - INFO - Round   9, clients: [5 8 7 1 2],  Contribution [ 0.          0.00610222  0.01021818  0.          0.         -0.02267186
+  0.          0.01091964 -0.00224725  0.        ]
+2025-02-27 00:28:43,814 - INFO - User 0:Total Shapley Value = -0.1303
+2025-02-27 00:28:43,815 - INFO - User 1:Total Shapley Value = 0.2247
+2025-02-27 00:28:43,815 - INFO - User 2:Total Shapley Value = 0.2783
+2025-02-27 00:28:43,815 - INFO - User 3:Total Shapley Value = 0.3478
+2025-02-27 00:28:43,815 - INFO - User 4:Total Shapley Value = 0.0296
+2025-02-27 00:28:43,815 - INFO - User 5:Total Shapley Value = -0.2144
+2025-02-27 00:28:43,815 - INFO - User 6:Total Shapley Value = -0.0006
+2025-02-27 00:28:43,815 - INFO - User 7:Total Shapley Value = 0.2925
+2025-02-27 00:28:43,815 - INFO - User 8:Total Shapley Value = -0.0434
+2025-02-27 00:28:43,815 - INFO - User 9:Total Shapley Value = 0.1436
+2025-02-27 00:28:50,240 - INFO - Training accuracy: 98.00
+2025-02-27 00:28:50,240 - INFO - Testing accuracy: 97.00
+客户端 2 出现的次数: 5
+客户端 3 出现的次数: 6
+客户端 7 出现的次数: 4
+客户端 1 出现的次数: 7
+客户端 9 出现的次数: 5
+客户端 0 出现的次数: 5
+客户端 8 出现的次数: 7
+客户端 5 出现的次数: 6
+客户端 4 出现的次数: 3
+客户端 6 出现的次数: 2
