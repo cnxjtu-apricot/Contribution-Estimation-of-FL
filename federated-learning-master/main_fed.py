@@ -273,9 +273,10 @@ def setup_logging(dataset, iid, model, score_method):
 
 
 def main_train(args, net_glob, dataset_train, dict_users, user_mask):
-    client_choiced = []
+    """ 总体训练流程，不设掩膜，用户随机生成，获得初始子集 """
+    client_choiced = [] # 记录每轮的参与者子集
     w_glob = net_glob.state_dict()
-    grad_glob = [torch.zeros_like(v) for v in w_glob.values()]
+    grad_glob = {key: torch.zeros_like(value) for key, value in w_glob.items()}
     evaluation_values = np.zeros(args.num_users)
 
     active_users = np.where(user_mask == False)[0]  # 只考虑活跃用户
@@ -300,7 +301,7 @@ def main_train(args, net_glob, dataset_train, dict_users, user_mask):
         idxs_users = np.random.choice(active_users, m, replace=False)
         client_choiced.append(idxs_users)
 
-        # # 方案二：动态调整参与者
+        # # 方案二：动态调整参与者，参与者数量最多不超过frac * current_num_users
         # if iter == 0:
         #     # 第一轮：随机选择初始参与者
         #     m = max(int(args.frac * current_num_users), 1)
@@ -313,19 +314,21 @@ def main_train(args, net_glob, dataset_train, dict_users, user_mask):
         # else:
         #     # 后续轮次：动态调整参与者
         #     new_participants = []
-        #
+        #     num_new_participation = 0
         #     for user in active_users:
         #         if client_participation[user]:
         #             # 上一轮参与者：以 prob 的概率退出
-        #             if np.random.rand() < client_prob[user]:
+        #             if np.random.rand() < client_prob[user] | new_participants >= args.frac * current_num_users:
         #                 client_prob[user] = 1.0 / args.epochs  # 退出，不参与本轮, 重置概率
         #             else:
         #                 new_participants.append(user)  # 继续参与
+        #                 num_new_participation += 1
         #                 client_prob[user] *= 2  # 未退出，概率翻倍
         #         else:
         #             # 上一轮未参与者：以 prob 的概率加入
-        #             if np.random.rand() < client_prob[user]:
+        #             if np.random.rand() < client_prob[user] & new_participants < args.frac * current_num_users:
         #                 new_participants.append(user)  # 加入本轮
+        #                 num_new_participation += 1
         #                 client_prob[user] = 1.0 / args.epochs  # 加入后退出概率归零
         #             else:
         #                 client_prob[user] *= 2  # 未加入，概率翻倍
@@ -361,7 +364,7 @@ def main_train(args, net_glob, dataset_train, dict_users, user_mask):
         for user_id in idxs_users:
             evaluation_values[user_id] += score_round[user_id]
 
-        logging.info("Clients participation: %s", list(idxs_users))
+        logging.info("epoch: %s, Clients participation: %s", iter, list(client_choiced[iter]))
         logging.info("Clients Score: %s", list(evaluation_values))
 
     # 统计时直接使用原始ID
@@ -369,7 +372,59 @@ def main_train(args, net_glob, dataset_train, dict_users, user_mask):
     count = Counter(all_clients)
     logging.info("Active clients participation: %s", dict(count.items()))
 
-    return evaluation_values
+    return evaluation_values, client_choiced
+
+def removed_train(args, net_glob, dataset_train, dict_users, user_mask, client_choiced):
+    """ 移除用户训练函数， 每次从已有参与者子集中移除指定的用户 """
+    w_glob = net_glob.state_dict()
+    grad_glob = {key: torch.zeros_like(value) for key, value in w_glob.items()}
+    evaluation_values = np.zeros(args.num_users)
+
+    for iter in range(args.epochs):
+        loss_locals = []
+        w_locals = []
+        grads_locals = []
+
+        # 参与者为曾经的对应轮次子集
+        for idx in client_choiced[iter]:
+            # 如果用户被移除，跳过他
+            if user_mask[idx]:
+                client_choiced[iter] = np.delete(client_choiced[iter], np.where(client_choiced[iter] == idx))
+                continue
+
+            local = LocalUpdate(args=args, dataset=dataset_train, idxs=dict_users[idx])
+            w, loss, grad = local.train(net=copy.deepcopy(net_glob).to(args.device))
+            w_locals.append(copy.deepcopy(w))
+            grads_locals.append(copy.deepcopy(grad))
+            loss_locals.append(copy.deepcopy(loss))
+
+        # 贡献值累加（直接使用原始ID）
+        if len(grads_locals) == 0:
+            logging.info("epoch: %s, no participant", iter)
+            logging.info("remained no change")
+            continue
+
+        else:
+            score_round = evaluate(args, w_locals, client_choiced[iter], w_glob, grads_locals,
+                                    FedAvg(grads_locals), grad_glob)
+
+        # 更新全局模型
+        w_glob = FedAvg(w_locals)
+        grad_glob = FedAvg(grads_locals)
+        net_glob.load_state_dict(w_glob)
+
+        for user_id in client_choiced[iter]:
+            evaluation_values[user_id] += score_round[user_id]
+
+        logging.info("epoch: %s, Clients participation: %s", iter, list(client_choiced[iter]))
+        logging.info("Clients Score: %s", list(evaluation_values))
+
+    # 统计时直接使用原始ID
+    all_clients = np.concatenate(client_choiced)
+    count = Counter(all_clients)
+    logging.info("Active clients participation: %s", dict(count.items()))
+
+    return evaluation_values, client_choiced
 
 
 def evaluate_with_mask(args, net_glob_origin, dataset_train, dataset_test, dict_users):
@@ -379,7 +434,7 @@ def evaluate_with_mask(args, net_glob_origin, dataset_train, dataset_test, dict_
     inner_net_glob = copy.deepcopy(net_glob_origin)
 
     # 训练并获取贡献值
-    evaluation_values = main_train(
+    evaluation_values, subset_list = main_train(
         args, inner_net_glob, dataset_train,
         dict_users, user_mask
     )
@@ -388,7 +443,9 @@ def evaluate_with_mask(args, net_glob_origin, dataset_train, dataset_test, dict_
     acc_test, _ = test_img(inner_net_glob, dataset_test, args)
     acc_record.append(acc_test)
 
-    logging.info(f"Origin Test Accuracy: {acc_test:.2f}%")
+    logging.info(f"Deactivated user -1, "
+                 f"Remaining active: {np.sum(~user_mask)}, "
+                 f"Test Accuracy: {acc_test:.2f}%")
 
     while np.sum(~user_mask) > 2:  # 当活跃用户>2时继续
         # 找出活跃用户中贡献最高的标记为不活跃
@@ -399,9 +456,9 @@ def evaluate_with_mask(args, net_glob_origin, dataset_train, dataset_test, dict_
         inner_net_glob = copy.deepcopy(net_glob_origin)
 
         # 训练并获取贡献值
-        evaluation_values = main_train(
+        evaluation_values, subset_list = removed_train(
             args, inner_net_glob, dataset_train,
-            dict_users, user_mask
+            dict_users, user_mask, subset_list
         )
 
         # 测试准确率

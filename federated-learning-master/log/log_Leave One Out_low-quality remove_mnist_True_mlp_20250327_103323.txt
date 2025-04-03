@@ -1,6 +1,0 @@
-2025-03-27 10:33:23,974 - INFO - MLP(
-  (layer_input): Linear(in_features=784, out_features=200, bias=True)
-  (relu): ReLU()
-  (dropout): Dropout(p=0.5)
-  (layer_hidden): Linear(in_features=200, out_features=10, bias=True)
-)
