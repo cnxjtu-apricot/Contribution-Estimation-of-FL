@@ -62,6 +62,7 @@ def generate_permutations(num_active_users, args):
 
         return sampled_perms[:max_iter_r]  # 严格数量控制
 
+
 # 计算模型F1分数
 def calculate_F1(model):
     args = args_parser()
@@ -114,6 +115,18 @@ def calculate_cosine_similarity(tensor1, tensor2):
     return F.cosine_similarity(tensor1.view(1, -1), tensor2.view(1, -1)).item()
 
 
+def calculate_list_cosine_similarity(list1, list2):
+    # 遍历字典并计算相似度
+    similarities = []
+    for i in range(len(list1)):
+        similarity = calculate_cosine_similarity(list1[i], list2[i])
+        similarities.append(similarity)
+
+    # 计算相似度的均值
+    if similarities:
+        return sum(similarities) / len(similarities)
+
+
 def calculate_dict_cosine_similarity(grad_dict1, grad_dict2):
     # 遍历字典并计算相似度
     similarities = []
@@ -129,10 +142,19 @@ def calculate_dict_cosine_similarity(grad_dict1, grad_dict2):
         return sum(similarities) / len(similarities)
 
 
-# 假设 args 是你的参数对象，并且你希望调用对应的方法
 def evaluate(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):
     # 使用 get() 来安全地获取方法，如果方法不存在，使用一个默认方法
     method = method_mapping.get(args.FV_method)
+
+    # 调用对应的方法
+    result = method(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob)
+    return result
+
+
+
+def evaluate_both(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob, method):
+    # 使用 get() 来安全地获取方法，如果方法不存在，使用一个默认方法
+    method = method_mapping.get(method)
 
     # 调用对应的方法
     result = method(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob)
@@ -189,7 +211,6 @@ def True_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new
 
 
 def TMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):
-    """修正后的True Shapley实现"""
     num_total_users = args.num_users
     shapley_values = np.zeros(num_total_users)
     num_active_users = len(idxs_users)
@@ -209,10 +230,12 @@ def TMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new,
     # 预计算原始用户ID映射
     original_ids = idxs_users  # 直接使用传入的原始ID
     current_w = copy.deepcopy(w_glob)
+    t = 0  # 排列时间步
 
     f1_final = calculate_F1(FedAvg(w_locals))
 
     for perm in permutations:
+        t += 1
         f1_previous = calculate_F1(current_w)
         for i in range(num_active_users):
             # 通过排列索引获取原始用户ID
@@ -234,12 +257,14 @@ def TMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new,
                 # 计算贡献
                 f1_current = calculate_F1(w_subset)
                 contribution = f1_current - f1_previous
-                shapley_values[user_idx] += contribution  # 使用原始ID索引
+                # 动态加权更新Shapley值
+                shapley_values[user_idx] = (t - 1) / t * shapley_values[user_idx] + (1 / t) * contribution
+
+                # shapley_values[user_idx] += contribution  # 使用原始ID索引，执行静态累加
                 f1_previous = f1_current
 
     # 标准化处理
-    if len(permutations) > 0:
-        shapley_values /= len(permutations)
+    shapley_values /= np.sum(shapley_values)
     return shapley_values
 
 
@@ -256,13 +281,19 @@ def GTG_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new,
     original_ids = idxs_users  # 原始用户ID列表
 
     try:
+        # 方法1：全排列
         # permutations = list(itertools.permutations(range(num_active_users)))
+
+        # 方法2：m-全排列
         permutations = generate_permutations(num_active_users, args)
     except MemoryError:
         print("Permutations memory error!")
         return shapley_values
 
+    t = 0 # 初始化时间步
     for perm in permutations:
+        t += 1
+
         current_g = copy.deepcopy(grad_glob)
         g_score_previous = calculate_dict_cosine_similarity(current_g, grad_glob_new) if current_g else 0
 
@@ -281,10 +312,11 @@ def GTG_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new,
             g_current = calculate_dict_cosine_similarity(current_g, grad_glob_new)
             contribution = g_current - g_score_previous
             shapley_values[user_idx] += contribution  # 使用原始ID
+            shapley_values[user_idx] = (t - 1) / t * shapley_values[user_idx] + (1 / t) * contribution
+
             g_score_previous = g_current
 
-    if len(permutations) > 0:
-        shapley_values /= len(permutations)
+    shapley_values /= np.sum(shapley_values)
     return shapley_values
 
 

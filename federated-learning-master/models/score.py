@@ -84,7 +84,6 @@ def calculate_dict_cosine_similarity(grad_dict1, grad_dict2):
         return sum(similarities) / len(similarities)
 
 
-# 假设 args 是你的参数对象，并且你希望调用对应的方法
 def evaluate(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):
     # 使用 get() 来安全地获取方法，如果方法不存在，使用一个默认方法
     method = method_mapping.get(args.FV_method)
