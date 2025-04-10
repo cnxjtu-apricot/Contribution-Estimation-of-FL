@@ -102,6 +102,10 @@ def main_train(args, net_glob, dataset_train, dataset_test, dict_users):
             evaluation_values_f1[user_id] += score_round_f1[user_id]
             evaluation_values_g[user_id] += score_round_g[user_id]
 
+        logging.info("epoch: %s, Clients participation: %s", iter, list(client_choiced[iter]))
+        logging.info("Clients Score f1: %s", list(evaluation_values_f1))
+        logging.info("Clients Score gradient: %s", list(evaluation_values_g))
+
         # 更新全局模型
         w_glob = FedAvg(w_locals)
         grad_glob = FedAvg(grads_locals)
@@ -123,10 +127,14 @@ def main_train(args, net_glob, dataset_train, dataset_test, dict_users):
     # 计算 MSE
     mse = np.mean((evaluation_values_f1 - evaluation_values_g) ** 2)
 
+    relative_errors = np.abs(evaluation_values_f1 - evaluation_values_g) / np.where(evaluation_values_g != 0, evaluation_values_g, 1e-10)
+    mre = np.mean(relative_errors)
+
     # 输出结果
     print("Cosine Similarity:", cosine_similarity)
     print("Mean Absolute Error (MAE):", mae)
     print("Mean Squared Error (MSE):", mse)
+    print("Mean Relative Error (MRE):", mre)
 
 
 if __name__ == '__main__':

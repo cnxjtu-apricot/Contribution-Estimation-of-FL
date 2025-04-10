@@ -480,8 +480,8 @@ if __name__ == '__main__':
     # load dataset and split users
     if args.dataset == 'mnist':
         trans_mnist = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-        dataset_train = datasets.MNIST('../data/mnist/', train=True, download=True, transform=trans_mnist)
-        dataset_test = datasets.MNIST('../data/mnist/', train=False, download=True, transform=trans_mnist)
+        dataset_train = datasets.MNIST('../data/mnist/', train=True, download=False, transform=trans_mnist)
+        dataset_test = datasets.MNIST('../data/mnist/', train=False, download=False, transform=trans_mnist)
         # sample users
         if args.iid:
             dict_users = mnist_iid(dataset_train, args.num_users)

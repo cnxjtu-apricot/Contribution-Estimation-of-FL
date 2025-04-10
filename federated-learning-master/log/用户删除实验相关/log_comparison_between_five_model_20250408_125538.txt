@@ -1,0 +1,33 @@
+2025-04-08 12:55:38,752 - INFO - MLP(
+  (layer_input): Linear(in_features=784, out_features=200, bias=True)
+  (relu): ReLU()
+  (dropout): Dropout(p=0.5)
+  (layer_hidden): Linear(in_features=200, out_features=10, bias=True)
+)
+2025-04-08 12:59:51,479 - INFO - epoch: 0 | Clients: [7, 1, 8, 11, 15, 0, 3, 6, 19, 12] | Train: 53.29s | Eval: 6.60s (B:95.46/M:45.28/T:5.89/G:46.20/GT:6.60)
+2025-04-08 13:04:35,224 - INFO - epoch: 1 | Clients: [5, 15, 19, 2, 8, 7, 13, 6, 9, 12] | Train: 51.95s | Eval: 7.84s (B:222.46/M:90.02/T:12.27/G:92.04/GT:14.44)
+2025-04-08 13:08:40,661 - INFO - epoch: 2 | Clients: [18, 8, 4, 19, 2, 0, 13, 16, 17, 10] | Train: 51.88s | Eval: 5.94s (B:315.34/M:135.81/T:16.91/G:136.34/GT:20.38)
+2025-04-08 13:12:45,076 - INFO - epoch: 3 | Clients: [1, 9, 8, 4, 19, 0, 12, 17, 5, 16] | Train: 50.86s | Eval: 5.22s (B:407.66/M:180.23/T:21.63/G:183.21/GT:25.60)
+2025-04-08 13:16:42,382 - INFO - epoch: 4 | Clients: [16, 17, 11, 7, 8, 5, 9, 4, 14, 13] | Train: 45.78s | Eval: 7.96s (B:498.40/M:224.62/T:26.30/G:226.97/GT:33.56)
+2025-04-08 13:20:43,417 - INFO - epoch: 5 | Clients: [15, 6, 9, 8, 17, 7, 0, 5, 1, 2] | Train: 49.71s | Eval: 7.62s (B:586.98/M:269.75/T:32.27/G:270.97/GT:41.18)
+2025-04-08 13:24:45,971 - INFO - epoch: 6 | Clients: [10, 11, 19, 13, 18, 3, 4, 6, 2, 7] | Train: 48.21s | Eval: 6.92s (B:679.48/M:314.74/T:39.16/G:313.97/GT:48.10)
+2025-04-08 13:28:44,926 - INFO - epoch: 7 | Clients: [0, 5, 8, 3, 7, 6, 14, 19, 15, 17] | Train: 49.12s | Eval: 4.56s (B:768.16/M:360.45/T:44.87/G:359.10/GT:52.66)
+2025-04-08 13:32:46,844 - INFO - epoch: 8 | Clients: [16, 13, 9, 15, 11, 3, 17, 12, 0, 1] | Train: 48.43s | Eval: 5.61s (B:859.53/M:405.60/T:51.49/G:403.83/GT:58.27)
+2025-04-08 13:36:50,368 - INFO - epoch: 9 | Clients: [14, 12, 17, 9, 7, 8, 3, 11, 10, 0] | Train: 48.56s | Eval: 6.88s (B:951.78/M:450.22/T:58.50/G:448.01/GT:65.15)
+2025-04-08 13:36:50,371 - INFO - 
+===== Final Summary =====
+2025-04-08 13:36:50,371 - INFO - Total train time: 497.79s
+2025-04-08 13:36:50,372 - INFO - Total eval time - Baseline: 951.78s
+2025-04-08 13:36:50,372 - INFO - Total eval time - MC: 450.22s
+2025-04-08 13:36:50,372 - INFO - Total eval time - TMC: 58.50s
+2025-04-08 13:36:50,373 - INFO - Total eval time - GMC: 448.01s
+2025-04-08 13:36:50,373 - INFO - Total eval time - GTMC: 65.15s
+2025-04-08 13:36:50,373 - INFO - Avg epoch time: 247.16s
+2025-04-08 13:36:50,374 - INFO - Client participation counts: {7: 7, 1: 4, 8: 8, 11: 5, 15: 5, 0: 7, 3: 5, 6: 5, 19: 6, 12: 5, 5: 5, 2: 4, 13: 5, 9: 6, 18: 2, 4: 4, 16: 4, 17: 7, 10: 3, 14: 3}
+2025-04-08 13:36:51,132 - INFO - 
+===== Evaluation Metrics =====
+2025-04-08 13:36:51,132 - INFO - MC: Time=450.22s | MSE=0.0000 | MAE=0.0001 | MRE=0.0003 | CosSim=1.0000
+2025-04-08 13:36:51,133 - INFO - TMC: Time=58.50s | MSE=0.0079 | MAE=0.0676 | MRE=0.1396 | CosSim=0.9885
+2025-04-08 13:36:51,133 - INFO - GMC: Time=448.01s | MSE=0.0000 | MAE=0.0001 | MRE=0.0002 | CosSim=1.0000
+2025-04-08 13:36:51,133 - INFO - GTMC: Time=65.15s | MSE=0.0093 | MAE=0.0656 | MRE=0.1337 | CosSim=0.9866
+2025-04-08 13:36:53,288 - INFO - Metrics visualization saved to: ./save\metrics_comparison_20250408_133651.png

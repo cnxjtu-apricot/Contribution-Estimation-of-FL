@@ -8,7 +8,7 @@ def args_parser():
     parser = argparse.ArgumentParser()
     # federated arguments
     parser.add_argument('--epochs', type=int, default=10, help="rounds of training")
-    parser.add_argument('--num_users', type=int, default=10, help="number of users: K")
+    parser.add_argument('--num_users', type=int, default=20, help="number of users: K")
     parser.add_argument('--frac', type=float, default=0.5, help="the fraction of clients: C")
     parser.add_argument('--local_ep', type=int, default=5, help="the number of local epochs: E")
     parser.add_argument('--local_bs', type=int, default=10, help="local batch size: B")
@@ -28,7 +28,7 @@ def args_parser():
                         help="Whether use max pooling rather than strided convolutions")
 
     # other arguments
-    parser.add_argument('--dataset', type=str, default='mnist', help="name of dataset")
+    parser.add_argument('--dataset', type=str, default='cifar', help="name of dataset")
     parser.add_argument('--iid', action='store_true', help='whether i.i.d or not')
     parser.add_argument('--num_classes', type=int, default=10, help="number of classes")
     parser.add_argument('--num_channels', type=int, default=3, help="number of channels of imges")
@@ -39,8 +39,8 @@ def args_parser():
     parser.add_argument('--all_clients', action='store_true', help='aggregation over all clients')
 
     # contribution value method
-    parser.add_argument('--FV_method', type=int, default='3', help='FV_method 1:True Shapley 2:TMC-Shapley 3:GTG-Shapley'
-                                                                       '4:Leave One Out 5:Random')
+    parser.add_argument('--FV_method', type=int, default='1', help='FV_method 1:True Shapley 2:MC-Shapley 3:TMC-Shapley'
+                                                                       '4:GMC-Shapley 5:GTMC-Shapley 6:Random')
     parser.add_argument('--Tolerance', type=float, default='0.01', help='The tolerance of TMC limitation ans m-sample')
     args = parser.parse_args()
     return args
