@@ -507,7 +507,12 @@ def True_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new
         #     current_time = datetime.datetime.now()
         #     print("当前时间:", current_time.strftime("%Y-%m-%d %H:%M:%S"))
 
-    shapley_values = softmax(shapley_values)
+    sum_shapley = 0
+    for idx in idxs_users:
+        shapley_values[idx] = np.exp(shapley_values[idx])
+        sum_shapley += shapley_values[idx]
+    for idx in idxs_users:
+        shapley_values[idx] /= sum_shapley
 
     return shapley_values
 
@@ -547,7 +552,12 @@ def MC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, 
             shapley_values[user_idx] = (t-1)/t * shapley_values[user_idx] + (1/t) * contribution
             g_score_previous = g_current
 
-    shapley_values = softmax(shapley_values)
+    sum_shapley = 0
+    for idx in idxs_users:
+        shapley_values[idx] = np.exp(shapley_values[idx])
+        sum_shapley += shapley_values[idx]
+    for idx in idxs_users:
+        shapley_values[idx] /= sum_shapley
     return shapley_values
 
 def TMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):
@@ -610,7 +620,12 @@ def TMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new,
             avg_delta = delta_sum / num_total_users
             converged = (avg_delta < 0.05)  # 阈值条件
 
-    shapley_values = softmax(shapley_values)
+    sum_shapley = 0
+    for idx in idxs_users:
+        shapley_values[idx] = np.exp(shapley_values[idx])
+        sum_shapley += shapley_values[idx]
+    for idx in idxs_users:
+        shapley_values[idx] /= sum_shapley
     return shapley_values
 
 def GMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):
@@ -649,7 +664,12 @@ def GMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new,
             shapley_values[user_idx] = (t-1)/t * shapley_values[user_idx] + (1/t) * contribution
             g_score_previous = g_current
 
-    shapley_values = softmax(shapley_values)
+    sum_shapley = 0
+    for idx in idxs_users:
+        shapley_values[idx] = np.exp(shapley_values[idx])
+        sum_shapley += shapley_values[idx]
+    for idx in idxs_users:
+        shapley_values[idx] /= sum_shapley
     return shapley_values
 
 def GTMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):
@@ -711,7 +731,12 @@ def GTMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new
             avg_delta = delta_sum / num_total_users
             converged = (avg_delta < 0.05)  # 阈值条件
 
-    shapley_values = softmax(shapley_values)
+    sum_shapley = 0
+    for idx in idxs_users:
+        shapley_values[idx] = np.exp(shapley_values[idx])
+        sum_shapley += shapley_values[idx]
+    for idx in idxs_users:
+        shapley_values[idx] /= sum_shapley
     return shapley_values
 
 def Random_permuation(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):
@@ -729,7 +754,12 @@ def Random_permuation(args, w_locals, idxs_users, w_glob, grads_locals, grad_glo
         user_id = original_ids[i]  # 当前用户的原始ID
         C_values[user_id] = random.uniform(-1, 1)
 
-    C_values = softmax(C_values)
+    sum_C = 0
+    for idx in idxs_users:
+        C_values[idx] = np.exp(C_values[idx])
+        sum_C += C_values[idx]
+    for idx in idxs_users:
+        C_values[idx] /= sum_C
     return C_values
 
 
