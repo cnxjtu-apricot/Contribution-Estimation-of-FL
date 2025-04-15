@@ -37,6 +37,7 @@ def args_parser():
     parser.add_argument('--verbose', action='store_true', help='verbose print')
     parser.add_argument('--seed', type=int, default=1, help='random seed (default: 1)')
     parser.add_argument('--all_clients', action='store_true', help='aggregation over all clients')
+    parser.add_argument('--poisoned_rate', type=float, default='0.2', help='poisoned clients rate')
 
     # contribution value method
     parser.add_argument('--FV_method', type=int, default='1', help='FV_method 1:True Shapley 2:MC-Shapley 3:TMC-Shapley'
