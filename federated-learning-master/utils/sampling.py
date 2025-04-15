@@ -48,6 +48,41 @@ def mnist_noniid(dataset, num_users):
     return dict_users
 
 
+def mnist_len_bias(dataset, num_users):
+    """
+    Sample len_differed client data from MNIST dataset
+    :param dataset:
+    :param num_users:
+    :return:
+    """
+    num_shards, num_imgs = 200, 300
+    idx_shard = [i for i in range(num_shards)]
+    dict_users = {i: np.array([], dtype='int64') for i in range(num_users)}
+    idxs = np.arange(num_shards*num_imgs)
+    labels = dataset.train_labels.numpy()
+
+    # sort labels
+    idxs_labels = np.vstack((idxs, labels))
+    idxs_labels = idxs_labels[:,idxs_labels[1,:].argsort()]
+    idxs = idxs_labels[0,:]
+
+    # divide and assign
+    # len(data) = (2, 5, 8)
+    for i in range(num_users):
+        len_data = 0
+        if i < num_users / 3:
+            len_data = 1
+        elif i < num_users * 2 / 3:
+            len_data = 2
+        else:
+            len_data = 3
+        rand_set = set(np.random.choice(idx_shard, 2 + len_data * 3 , replace=False))
+        idx_shard = list(set(idx_shard) - rand_set)
+        for rand in rand_set:
+            dict_users[i] = np.concatenate((dict_users[i], idxs[rand*num_imgs:(rand+1)*num_imgs]), axis=0)
+    return dict_users
+
+
 def cifar_iid(dataset, num_users):
     """
     Sample I.I.D. client data from CIFAR10 dataset
@@ -93,13 +128,14 @@ def cifar_noniid(dataset, num_users):
 
 
 if __name__ == '__main__':
-    trans_cifar = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    dataset_train = datasets.CIFAR10('../data/cifar', train=True, download=False, transform=trans_cifar)
-    dataset_test = datasets.CIFAR10('../data/cifar', train=False, download=False, transform=trans_cifar)
-    # trans_mnist = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-    # dataset_train = datasets.MNIST('../data/mnist/', train=True, download=False, transform=trans_mnist)
-    # dataset_test = datasets.MNIST('../data/mnist/', train=False, download=False, transform=trans_mnist)
+    # trans_cifar = transforms.Compose(
+    #     [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    # dataset_train = datasets.CIFAR10('../data/cifar', train=True, download=False, transform=trans_cifar)
+    # dataset_test = datasets.CIFAR10('../data/cifar', train=False, download=False, transform=trans_cifar)
+    trans_mnist = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+    dataset_train = datasets.MNIST('../data/mnist/', train=True, download=False, transform=trans_mnist)
+    dataset_test = datasets.MNIST('../data/mnist/', train=False, download=False, transform=trans_mnist)
 
     num = 10
-    d = cifar_noniid(dataset_train, num)
+    # d = mnist_noniid(dataset_train, num)
+    d = mnist_label_decay(dataset_train, num, 0.3)

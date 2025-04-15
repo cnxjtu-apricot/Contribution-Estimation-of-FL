@@ -23,6 +23,34 @@ class DatasetSplit(Dataset):
         return image, label
 
 
+class Poisoned_DatasetSplit(Dataset):
+    def __init__(self, dataset, idxs, poison_rate=0.3):
+        self.dataset = dataset
+        self.idxs = list(idxs)
+        self.poison_rate = poison_rate
+
+        # 生成中毒样本标记
+        num_total = len(self.idxs)
+        self.poison_indices = np.random.choice(
+            self.idxs,
+            size=int(num_total * poison_rate),
+            replace=False
+        )
+
+    def __len__(self):
+        return len(self.idxs)
+
+    def __getitem__(self, item):
+        idx = self.idxs[item]  # 获取原始索引
+        image, label = self.dataset[idx]
+
+        # 动态判断是否需要翻转标签
+        if idx in self.poison_indices:
+            label = 9 - label  # 单标签翻转
+
+        return image, label
+
+
 class LocalUpdate(object):
     def __init__(self, args, dataset=None, idxs=None, train=True):
         self.args = args
