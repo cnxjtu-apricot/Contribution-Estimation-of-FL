@@ -235,12 +235,13 @@ from torchvision import datasets, transforms
 import torch
 import logging
 import os
+import pandas as pd
 from datetime import datetime
 from collections import Counter
 
 from utils.sampling import mnist_iid, mnist_noniid, cifar_iid, cifar_noniid
 from utils.options import args_parser
-from models.Update import LocalUpdate
+from models.Update import LocalUpdate, Glob_Update
 from models.Nets import MLP, CNNMnist, CNNCifar
 from models.Fed import FedAvg
 from models.test import test_img
@@ -356,24 +357,28 @@ def main_train(args, net_glob, dataset_train, dict_users, user_mask):
             grads_locals.append(copy.deepcopy(grad))
             loss_locals.append(copy.deepcopy(loss))
 
+        # 在测试集上训练获取梯度，以其作为基线
+        test_glob = Glob_Update(args=args, dataset=dataset_train)
+        w_test, loss_test, grad_test = test_glob.train(net=copy.deepcopy(net_glob).to(args.device))
+
         # 贡献值累加（直接使用原始ID）
         score_round_True = evaluate_both(args, w_locals, idxs_users, w_glob, grads_locals,
-                               FedAvg(grads_locals), grad_glob, 1)
+                               grad_test, grad_glob, 1)
 
         score_round_MC = evaluate_both(args, w_locals, idxs_users, w_glob, grads_locals,
-                                        FedAvg(grads_locals), grad_glob, 2)
+                                        grad_test, grad_glob, 2)
 
         score_round_TMC = evaluate_both(args, w_locals, idxs_users, w_glob, grads_locals,
-                                        FedAvg(grads_locals), grad_glob, 3)
+                                        grad_test, grad_glob, 3)
 
         score_round_GMC = evaluate_both(args, w_locals, idxs_users, w_glob, grads_locals,
-                                        FedAvg(grads_locals), grad_glob, 4)
+                                        grad_test, grad_glob, 4)
 
         score_round_GTMC = evaluate_both(args, w_locals, idxs_users, w_glob, grads_locals,
-                                        FedAvg(grads_locals), grad_glob, 5)
+                                        grad_test, grad_glob, 5)
 
         score_round_Rand = evaluate_both(args, w_locals, idxs_users, w_glob, grads_locals,
-                                        FedAvg(grads_locals), grad_glob, 6)
+                                        grad_test, grad_glob, 6)
 
         # 更新全局模型
         w_glob = FedAvg(w_locals)
@@ -400,6 +405,16 @@ def main_train(args, net_glob, dataset_train, dict_users, user_mask):
     all_clients = np.concatenate(client_choiced)
     count = Counter(all_clients)
     logging.info("Active clients participation: %s", dict(count.items()))
+
+    count_dict = dict(count)  # 将Counter转换为普通字典
+    for user_id in range(args.num_users):
+        cnt = count_dict.get(user_id, 0)
+        if cnt > 0:
+            evaluation_values_True[user_id] /= cnt
+            evaluation_values_MC[user_id] /= cnt
+            evaluation_values_TMC[user_id] /= cnt
+            evaluation_values_GMC[user_id] /= cnt
+            evaluation_values_GTMC[user_id] /= cnt
 
     return evaluation_values_True, evaluation_values_MC, evaluation_values_TMC, evaluation_values_GMC, evaluation_values_GTMC, evaluation_values_Rand,client_choiced
 
@@ -436,8 +451,11 @@ def removed_train(args, net_glob, dataset_train, dict_users, user_mask, client_c
             continue
 
         else:
+            # 在测试集上训练获取梯度，以其作为基线
+            test_glob = Glob_Update(args=args, dataset=dataset_train)
+            w_test, loss_test, grad_test = test_glob.train(net=copy.deepcopy(net_glob).to(args.device))
             score_round = evaluate_both(args, w_locals, client_choiced[iter], w_glob, grads_locals,
-                                    FedAvg(grads_locals), grad_glob, method_num)
+                                    grad_test, grad_glob, method_num)
 
         # 更新全局模型
         w_glob = FedAvg(w_locals)
@@ -704,6 +722,7 @@ if __name__ == '__main__':
     acc_history_True, acc_history_MC, acc_history_TMC, acc_history_GMC, acc_history_GTMC, acc_history_Random = evaluate_with_mask(
         args, net_glob, dataset_train, dataset_test, dict_users)
 
+
     # 可视化结果保存
     plt.figure(figsize=(12, 7))  # 增大画布尺寸
 
@@ -731,14 +750,12 @@ if __name__ == '__main__':
                  markersize=8)
 
         # 图表装饰
-    plt.title(f"Accuracy Trend Comparison ({args.dataset})", fontsize=14, pad=20)
-    plt.xlabel("Removal Steps", fontsize=12)
-    plt.ylabel("Test Accuracy (%)", fontsize=12)
+    plt.title(f"Accuracy Trend Comparison ({args.dataset})", fontsize=20, pad=20)
+    plt.xlabel("Removal Steps", fontsize=16)
+    plt.ylabel("Test Accuracy (%)", fontsize=16)
     plt.grid(True, linestyle='--', alpha=0.6)
 
-    # 优化图例
-    plt.legend(fontsize=10, framealpha=1, shadow=True,
-               bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.legend(fontsize=16, framealpha=1, shadow=True, loc='best')
 
     # 调整布局
     plt.tight_layout(rect=[0, 0, 0.85, 1])  # 为图例留出空间
@@ -751,3 +768,19 @@ if __name__ == '__main__':
                 bbox_inches='tight',
                 transparent=False)
     plt.close()
+
+    # 创建一个DataFrame
+    data = {
+        'True': acc_history_True,
+        'MC': acc_history_MC,
+        'TMC': acc_history_TMC,
+        'GMC': acc_history_GMC,
+        'GTMC': acc_history_GTMC,
+        'Random': acc_history_Random
+    }
+
+    df = pd.DataFrame(data)
+
+    # 保存到Excel文件
+    excel_filename = 'accuracy_history.xlsx'
+    df.to_excel(excel_filename, index=False, sheet_name='Accuracy History')

@@ -22,11 +22,33 @@ import random
 import copy
 import math
 
-# 计算 softmax
-def softmax(values):
-    exp_values = np.exp(values - np.max(values))  # 减去最大值以避免溢出
-    return exp_values / np.sum(exp_values)
+# 带正负的归一化
+def signed_normalize(shapley_values, idxs_users):
+    """
+    保留正负信息的归一化方法
+    参数：
+        shapley_values: 原始Shapley值数组（含正负值）
+        idxs_users: 需要归一化的用户索引
+    返回：
+        归一化后的Shapley值（范围[-1,1]）
+    """
+    # 分离正负部分
+    pos_values = np.where(shapley_values > 0, shapley_values, 0)
+    neg_values = np.where(shapley_values < 0, -shapley_values, 0)  # 取绝对值
 
+    # 分别计算正负和
+    sum_pos = np.sum(pos_values[idxs_users])
+    sum_neg = np.sum(neg_values[idxs_users])
+
+    # 分别归一化
+    normalized = np.zeros_like(shapley_values)
+    for idx in idxs_users:
+        if shapley_values[idx] > 0:
+            normalized[idx] = shapley_values[idx] / (sum_pos + 1e-10)  # 防止除零
+        else:
+            normalized[idx] = shapley_values[idx] / (sum_neg + 1e-10)
+
+    return normalized
 def generate_permutations(num_active_users, args):
     """动态生成排列的核心函数"""
     # 参数解析
@@ -57,10 +79,10 @@ def generate_permutations(num_active_users, args):
 
             # 生成前k位全排列P(n,k)
             sampled_perms = []
-            front_perms = itertools.permutations(range(num_active_users), k)
 
             # 构建完整排列
-            while len(sampled_perms) >= max_iter_r:
+            while len(sampled_perms) < max_iter_r:
+                front_perms = itertools.permutations(range(num_active_users), k)
                 for front in front_perms:
                     remaining = list(set(range(num_active_users)) - set(front))
                     np.random.shuffle(remaining)
@@ -84,11 +106,18 @@ def calculate_cosine_similarity(tensor1, tensor2):
     return F.cosine_similarity(tensor1.view(1, -1), tensor2.view(1, -1)).item()
 
 
+def calculate_mse(tensor1, tensor2):
+    return F.mse_loss(tensor1, tensor2).item()
+
 def calculate_list_cosine_similarity(list1, list2):
     # 遍历字典并计算相似度
+    args = args_parser()
     similarities = []
     for i in range(len(list1)):
-        similarity = calculate_cosine_similarity(list1[i], list2[i])
+        if args.v_func == 0:
+            similarity = calculate_cosine_similarity(list1[i], list2[i])
+        else:
+            similarity = calculate_mse(list1[i], list2[i])
         similarities.append(similarity)
 
     # 计算相似度的均值
@@ -97,11 +126,15 @@ def calculate_list_cosine_similarity(list1, list2):
 
 
 def calculate_dict_cosine_similarity(grad_dict1, grad_dict2):
-    # 遍历字典并计算相似度
+    # 遍历字典并计算相似度'
+    args = args_parser()
     similarities = []
     for key in grad_dict1.keys():
         if key in grad_dict2:
-            similarity = calculate_cosine_similarity(grad_dict1[key], grad_dict2[key])
+            if args.v_func == 0:
+                similarity = calculate_cosine_similarity(grad_dict1[key], grad_dict2[key])
+            else:
+                similarity = calculate_mse(grad_dict1[key], grad_dict2[key])
             similarities.append(similarity)
         else:
             print(f"{key} does not have a corresponding key in yy_grad.")
@@ -456,7 +489,10 @@ class ShapleyCache:
 
 
 def True_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):
-    """优化后的True Shapley实现（带DP缓存）"""
+    """
+        优化后的True Shapley实现（带DP缓存）
+        注意这里的grad_glob_new仅作为基线，即测试子集与该基线的相似度
+    """
     num_total_users = args.num_users
     shapley_values = np.zeros(num_total_users)
     num_active_users = len(idxs_users)
@@ -507,12 +543,14 @@ def True_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new
         #     current_time = datetime.datetime.now()
         #     print("当前时间:", current_time.strftime("%Y-%m-%d %H:%M:%S"))
 
-    sum_shapley = 0
-    for idx in idxs_users:
-        shapley_values[idx] = np.exp(shapley_values[idx])
-        sum_shapley += shapley_values[idx]
-    for idx in idxs_users:
-        shapley_values[idx] /= sum_shapley
+    # softmax方案
+    # sum_shapley = 0
+    # for idx in idxs_users:
+    #     shapley_values[idx] = np.exp(shapley_values[idx])
+    #     sum_shapley += shapley_values[idx]
+    # for idx in idxs_users:
+    #     shapley_values[idx] /= sum_shapley
+    shapley_values = signed_normalize(shapley_values, idxs_users)
 
     return shapley_values
 
@@ -552,12 +590,16 @@ def MC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, 
             shapley_values[user_idx] = (t-1)/t * shapley_values[user_idx] + (1/t) * contribution
             g_score_previous = g_current
 
-    sum_shapley = 0
-    for idx in idxs_users:
-        shapley_values[idx] = np.exp(shapley_values[idx])
-        sum_shapley += shapley_values[idx]
-    for idx in idxs_users:
-        shapley_values[idx] /= sum_shapley
+    # softmax方案
+    # sum_shapley = 0
+    # for idx in idxs_users:
+    #     shapley_values[idx] = np.exp(shapley_values[idx])
+    #     sum_shapley += shapley_values[idx]
+    # for idx in idxs_users:
+    #     shapley_values[idx] /= sum_shapley
+
+    shapley_values = signed_normalize(shapley_values, idxs_users)
+
     return shapley_values
 
 def TMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):
@@ -620,12 +662,16 @@ def TMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new,
             avg_delta = delta_sum / num_total_users
             converged = (avg_delta < 0.05)  # 阈值条件
 
-    sum_shapley = 0
-    for idx in idxs_users:
-        shapley_values[idx] = np.exp(shapley_values[idx])
-        sum_shapley += shapley_values[idx]
-    for idx in idxs_users:
-        shapley_values[idx] /= sum_shapley
+    # softmax方案
+    # sum_shapley = 0
+    # for idx in idxs_users:
+    #     shapley_values[idx] = np.exp(shapley_values[idx])
+    #     sum_shapley += shapley_values[idx]
+    # for idx in idxs_users:
+    #     shapley_values[idx] /= sum_shapley
+
+    shapley_values = signed_normalize(shapley_values, idxs_users)
+
     return shapley_values
 
 def GMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):
@@ -664,12 +710,15 @@ def GMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new,
             shapley_values[user_idx] = (t-1)/t * shapley_values[user_idx] + (1/t) * contribution
             g_score_previous = g_current
 
-    sum_shapley = 0
-    for idx in idxs_users:
-        shapley_values[idx] = np.exp(shapley_values[idx])
-        sum_shapley += shapley_values[idx]
-    for idx in idxs_users:
-        shapley_values[idx] /= sum_shapley
+    # softmax方案
+    # sum_shapley = 0
+    # for idx in idxs_users:
+    #     shapley_values[idx] = np.exp(shapley_values[idx])
+    #     sum_shapley += shapley_values[idx]
+    # for idx in idxs_users:
+    #     shapley_values[idx] /= sum_shapley
+    shapley_values = signed_normalize(shapley_values, idxs_users)
+
     return shapley_values
 
 def GTMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):
@@ -731,12 +780,15 @@ def GTMC_Shapley(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new
             avg_delta = delta_sum / num_total_users
             converged = (avg_delta < 0.05)  # 阈值条件
 
-    sum_shapley = 0
-    for idx in idxs_users:
-        shapley_values[idx] = np.exp(shapley_values[idx])
-        sum_shapley += shapley_values[idx]
-    for idx in idxs_users:
-        shapley_values[idx] /= sum_shapley
+    # softmax方案
+    # sum_shapley = 0
+    # for idx in idxs_users:
+    #     shapley_values[idx] = np.exp(shapley_values[idx])
+    #     sum_shapley += shapley_values[idx]
+    # for idx in idxs_users:
+    #     shapley_values[idx] /= sum_shapley
+    shapley_values = signed_normalize(shapley_values, idxs_users)
+
     return shapley_values
 
 def Random_permuation(args, w_locals, idxs_users, w_glob, grads_locals, grad_glob_new, grad_glob):

@@ -90,11 +90,26 @@ def cifar_iid(dataset, num_users):
     :param num_users:
     :return: dict of image index
     """
-    num_items = int(len(dataset)/num_users)
+    num_items = int(len(dataset)/num_users/10)
     dict_users, all_idxs = {}, [i for i in range(len(dataset))]
     for i in range(num_users):
         dict_users[i] = set(np.random.choice(all_idxs, num_items, replace=False))
         all_idxs = list(set(all_idxs) - dict_users[i])
+    return dict_users
+
+
+def cifar_iid_all_the_same(dataset, num_users):
+    """
+    Sample I.I.D. client data from CIFAR10 dataset
+    :param dataset:
+    :param num_users:
+    :return: dict of image index
+    """
+    num_items = int(len(dataset)/num_users/10)
+    dict_users, all_idxs = {}, [i for i in range(len(dataset))]
+    dict_users[0] = set(np.random.choice(all_idxs, num_items, replace=False))
+    for i in range(1, num_users):
+        dict_users[i] = dict_users[i - 1]
     return dict_users
 
 
@@ -138,4 +153,4 @@ if __name__ == '__main__':
 
     num = 10
     # d = mnist_noniid(dataset_train, num)
-    d = mnist_label_decay(dataset_train, num, 0.3)
+    # d = mnist_label_decay(dataset_train, num, 0.3)
